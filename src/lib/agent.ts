@@ -1,7 +1,8 @@
-// AI 智能体核心逻辑
+﻿// AI 智能体核心逻辑
 
 import { PROFILE_EXTRACTION_PROMPT, DIAGNOSIS_PROMPT, APPEAL_PROMPT, SHORT_REPLY_PROMPT } from "./prompts";
 import { env } from "./env";
+import { searchCompliance } from "./search";
 
 // ============================================
 // 产品关键词词典 — 用于精准特征推断
@@ -317,7 +318,7 @@ export function inferCategory(productType: string): string {
 }
 
 /**
- * 生成合规诊断（增强版：本地特征推断 + AI 综合诊断）
+ * 生成合规诊断（增强版：联网搜索 + 本地特征推断 + AI 综合诊断）
  */
 export async function generateDiagnosis(
   profile: ProductProfile,
@@ -345,7 +346,7 @@ export async function generateDiagnosis(
     has_flammable: profile.has_flammable ?? (keywordFeatures.has_flammable as boolean),
   };
 
-  // 3. 构建详细的特征描述（给 AI 更丰富的上下文）
+  // 3. 构建详细的特征描述
   const featureList: string[] = [];
   featureList.push(`产品类型：${mergedProfile.product_type}`);
   featureList.push(`品类：${mergedProfile.category}`);
@@ -367,19 +368,37 @@ export async function generateDiagnosis(
     featureList.push(`电池容量：${mergedProfile.battery_capacity}mAh`);
   }
 
+  // 4. 联网搜索补充合规信息
+  const marketName = market === "US" ? "美国" : market === "EU" ? "欧盟" : market === "UK" ? "英国" : market === "JP" ? "日本" : market === "CA" ? "加拿大" : "澳洲";
+  const searchQuery = `${mergedProfile.product_type} Amazon ${marketName} 合规认证要求`;
+  let webResults: { title: string; url: string; snippet: string }[] = [];
+
+  try {
+    webResults = await searchCompliance(searchQuery);
+  } catch (err) {
+    console.warn("联网搜索失败，使用本地数据:", err);
+  }
+
+  // 5. 构建搜索结果的上下文（如果有）
+  const searchContext = webResults.length > 0
+    ? `\n\n联网搜索结果参考：\n${webResults.map((r, i) => `${i+1}. ${r.title}\n   ${r.snippet}\n   来源：${r.url}`).join("\n\n")}`
+    : "";
+
+  // 6. 调用 AI 诊断（加入搜索结果上下文）
   return callAI<DiagnosisResult>(
     "diagnose",
     DIAGNOSIS_PROMPT
       .replace("{productType}", mergedProfile.product_type)
       .replace("{productFeatures}", featureList.join("、"))
-      .replace("{market}", market === "US" ? "美国" : market === "EU" ? "欧盟" : market === "UK" ? "英国" : market === "JP" ? "日本" : market === "CA" ? "加拿大" : "澳洲")
+      .replace("{market}", marketName)
       .replace("{category}", category || mergedProfile.category),
-    `请根据以下产品信息生成详细的合规诊断：
+    `请根据以下产品信息和联网搜索结果生成详细的合规诊断：
 
 产品类型：${mergedProfile.product_type}
 品类：${mergedProfile.category}
 特征：${featureList.join("、")}
-目标市场：${market}
+目标市场：${marketName}
+${searchContext}
 
 请特别注意该产品是否有以下特殊风险：
 - 含锂电池：需要 UN38.3、MSDS、运输安全

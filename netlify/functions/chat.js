@@ -1,7 +1,9 @@
 /**
- * Netlify Serverless Function — AI 聊天代理
+ * Netlify Serverless Function — AI 聊天代理 + 联网搜索
  * 
- * 用途：安全转发 AI 请求，密钥不暴露在客户端
+ * 用途：
+ * 1. 安全转发 AI 请求（密钥不暴露客户端）
+ * 2. 联网搜索合规数据
  */
 
 export default async function handler(event, context) {
@@ -24,6 +26,7 @@ export default async function handler(event, context) {
 
   // 从环境变量读取 API Key
   const API_KEY = process.env.AGNES_API_KEY || process.env.OPENAI_API_KEY;
+  const SEARCH_API_KEY = process.env.SEARCH_API_KEY;
   
   if (!API_KEY) {
     return {
@@ -44,6 +47,163 @@ export default async function handler(event, context) {
     };
   }
 
+  const { action, prompt, message } = body;
+
+  // ============================================
+  // 联网搜索端点
+  // ============================================
+  if (action === "search") {
+    return await handleSearch(event, headers, body, SEARCH_API_KEY);
+  }
+
+  // ============================================
+  // AI 对话端点
+  // ============================================
+  return await handleAIChat(event, headers, body, API_KEY);
+}
+
+/**
+ * 联网搜索合规数据
+ * 使用 Bing Search API / SerpAPI / 免费搜索
+ */
+async function handleSearch(event, headers, body, searchApiKey) {
+  const query = body.query || "";
+  if (!query) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: "缺少搜索 query" }),
+    };
+  }
+
+  try {
+    // 方案 1: 使用 SerpAPI（免费 100 次/月）
+    const SERPAPI_KEY = process.env.SERPAPI_KEY;
+    if (SERPAPI_KEY) {
+      return await searchViaSerpApi(SERPAPI_KEY, query, headers);
+    }
+
+    // 方案 2: 使用 Bing Search API
+    if (searchApiKey) {
+      return await searchViaBing(searchApiKey, query, headers);
+    }
+
+    // 方案 3: 使用免费 DuckDuckGo 搜索（无需 API Key）
+    return await searchViaDuckDuckGo(query, headers);
+
+  } catch (err) {
+    console.error("搜索失败:", err);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: "搜索失败", 
+        results: [] 
+      }),
+    };
+  }
+}
+
+/**
+ * 通过 SerpAPI 搜索（结构化数据，质量最高）
+ */
+async function searchViaSerpApi(key: string, query: string, headers: Record<string, string>) {
+  const encodedQuery = encodeURIComponent(`${query} 亚马逊合规认证要求`);
+  const url = `https://serpapi.com/search.json?q=${encodedQuery}&engine=google&num=5&api_key=${key}`;
+  
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`SerpAPI 错误: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const results = (data.organic_results || []).map((r: any) => ({
+    title: r.title || "",
+    url: r.link || "",
+    snippet: r.snippet || "",
+  }));
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({ results }),
+  };
+}
+
+/**
+ * 通过 Bing Search API
+ */
+async function searchViaBing(key: string, query: string, headers: Record<string, string>) {
+  const url = "https://api.bing.microsoft.com/v7.0/search";
+  
+  const response = await fetch(url, {
+    headers: {
+      "Ocp-Apim-Subscription-Key": key,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Bing API 错误: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const results = (data.webPages?.value || []).map((r: any) => ({
+    title: r.name || "",
+    url: r.url || "",
+    snippet: r.snippet || "",
+  }));
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({ results }),
+  };
+}
+
+/**
+ * 通过 DuckDuckGo 免费搜索（无需 API Key）
+ */
+async function searchViaDuckDuckGo(query: string, headers: Record<string, string>) {
+  const encodedQuery = encodeURIComponent(query);
+  const url = `https://html.duckduckgo.com/html/?q=${encodedQuery}`;
+  
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; ComplianceCat/1.0)",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`DuckDuckGo 错误: ${response.status}`);
+  }
+
+  const html = await response.text();
+  
+  // 解析 DuckDuckGo HTML 结果
+  const results = [];
+  const resultRegex = /<a class="result__a"[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>.*?<a class="result__snippet[^>]*>([^<]+)<\/a>/g;
+  let match;
+  
+  while ((match = resultRegex.exec(html)) !== null) {
+    results.push({
+      title: match[2].trim(),
+      url: match[1],
+      snippet: match[3].trim(),
+    });
+    if (results.length >= 5) break;
+  }
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({ results }),
+  };
+}
+
+/**
+ * AI 对话处理
+ */
+async function handleAIChat(event, headers, body, apiKey: string) {
   const { action, prompt, message } = body;
 
   // 确定 API 端点
@@ -87,7 +247,7 @@ export default async function handler(event, context) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${API_KEY}`,
+        "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify(apiBody),
     });
