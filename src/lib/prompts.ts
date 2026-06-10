@@ -21,8 +21,9 @@ export const PROFILE_EXTRACTION_PROMPT = `你是一个亚马逊合规专家。�
    - contains_chemicals: boolean | null (是否含化学成分)
    - contains_magnets: boolean | null (是否含磁铁)
    - precision: boolean | null (是否精密仪器)
+   - has_flammable: boolean | null (是否易燃/压缩气体)
 
-2. 判断信息是否足够（至少需要 product_type + 目标市场）
+2. 判断信息是否足够（至少需要 product_type + 目标市场 + 至少一个特征）
 
 3. 如果信息不足，最多追问 3 个关键问题
 
@@ -42,7 +43,8 @@ export const PROFILE_EXTRACTION_PROMPT = `你是一个亚马逊合规专家。�
     "electrical": true | false | null,
     "contains_chemicals": true | false | null,
     "contains_magnets": true | false | null,
-    "precision": true | false | null
+    "precision": true | false | null,
+    "has_flammable": true | false | null
   },
   "market": "US | EU | UK | JP | CA | AU | null",
   "informationSufficient": true | false,
@@ -53,15 +55,16 @@ export const PROFILE_EXTRACTION_PROMPT = `你是一个亚马逊合规专家。�
 判断规则：
 - 产品类型必须有，没有就推断不出来
 - 目标市场必须有，没有就不知道法规
-- has_battery: 充电宝/充电器/耳机/智能手表/电动车/含电池 → true
-- has_wireless: 蓝牙/WiFi/遥控器/手环/智能设备 → true
-- is_children: 玩具/童装/奶嘴/学步车/儿童用品 → true
-- food_contact: 餐具/奶瓶/锅具/刀具/保鲜盒 → true
-- medical: 血压计/体温计/按摩仪/医疗器械 → true
-- electrical: 充电器/电器/灯具/电脑 → true
-- contains_chemicals: 化妆品/护肤品/农药/消毒液 → true
-- contains_magnets: 磁性配件/磁吸产品 → true
-- 精确到子品类 → true (如精密仪器/相机/手表)
+- has_battery: 充电宝/充电器/耳机/智能手表/电动车/含电池/无人机/电动工具 → true
+- has_wireless: 蓝牙/WiFi/遥控器/手环/智能设备/NFC → true
+- is_children: 玩具/童装/奶嘴/学步车/儿童用品/婴儿车 → true
+- food_contact: 餐具/奶瓶/锅具/保鲜盒/硅胶厨具/吸管 → true
+- medical: 血压计/体温计/按摩仪/医疗器械/血糖仪 → true
+- electrical: 充电器/电器/灯具/电脑/风扇/加湿器/吸尘器 → true
+- contains_chemicals: 化妆品/护肤品/农药/消毒液/精油/香水 → true
+- contains_magnets: 磁性配件/磁吸产品/MagSafe/磁力扣 → true
+- precision: 精密仪器/相机/电子秤/测距仪/显微镜 → true
+- has_flammable: 喷雾/油漆/杀虫剂/蜡烛/打火机/酒精类 → true
 - 信息不足时 questions 数组必须有内容
 - confidence: 信息完整且判断明确 → high，有部分推断 → medium，信息极少 → low
 
@@ -109,6 +112,50 @@ export const DIAGNOSIS_PROMPT = `你是亚马逊合规专家。根据用户产�
 - 费用和时间要合理估算
 - 按优先级排序：高风险强制项排最前
 - 只输出 JSON，不要任何说明文字
+
+认证覆盖规则（必须涵盖以下所有适用的认证类型）：
+
+【电子类产品】
+- 美国：FCC Part 15B（电磁兼容）、UL/ETL（安全）、Prop 65
+- 欧盟：CE（LVD/EMC）、RoHS、REACH、WEEE
+- 英国：UKCA、UK RoHS
+- 日本：PSE（菱形B类/A类）、TELEC（无线）、VCCI
+- 加拿大：IC（无线）、CEC（能效）
+- 澳洲：RCM、EESS
+
+【含电池产品】
+- UN38.3 运输安全测试
+- MSDS 安全数据表
+- UL 2743（锂电池安全）
+- IEC 62133（电池安全）
+
+【儿童产品】
+- 美国：CPSIA、CPC、ASTM F963、CPSC追溯标签、铅含量测试
+- 欧盟：EN 71、CE、REACH SVHC、欧盟授权代表
+- 日本：JIS T 8101、食品卫生法（入口玩具）
+- 澳洲：AS/NZS 8124
+
+【食品接触产品】
+- 美国：FDA 21 CFR（材料安全）
+- 欧盟：EU 10/2011
+- 日本：食品卫生法
+
+【医疗器械】
+- 美国：FDA Class I/II/III、510(k)、21 CFR Part 820
+- 欧盟：MDR 2017/745、CE 医疗器械
+
+【含化学成分产品】
+- 美国：FDA（化妆品/食品）、EPA（农药）
+- 欧盟：EU 1223/2009（化妆品）、REACH
+
+【含磁铁产品】
+- 美国：FTC 15 CFR 1309 磁性强检测
+- 欧盟：EN 62115 磁铁玩具安全
+
+【易燃产品】
+- DOT 运输认证
+- IATA/ICAO 航空运输规定
+- UN 包装认证
 `;
 
 // ============================================

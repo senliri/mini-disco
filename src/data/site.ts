@@ -24,6 +24,8 @@ export const productCategories = [
   { id: "pet", label: "宠物用品", icon: "🐾" },
   { id: "food", label: "食品饮料", icon: "🍎" },
   { id: "health", label: "医疗健康", icon: "💊" },
+  { id: "jewelry", label: "珠宝饰品", icon: "💍" },
+  { id: "garden", label: "园艺户外", icon: "🌿" },
 ];
 
 export const subCategories: Record<string, { id: string; label: string }[]> = {
@@ -107,6 +109,22 @@ export const subCategories: Record<string, { id: string; label: string }[]> = {
     { id: "massager", label: "按摩器" },
     { id: "oral-care", label: "口腔护理" },
     { id: "thermometer", label: "体温计" },
+  ],
+  jewelry: [
+    { id: "necklace", label: "项链" },
+    { id: "earring", label: "耳环" },
+    { id: "bracelet", label: "手链" },
+    { id: "ring", label: "戒指" },
+    { id: "watch", label: "手表" },
+    { id: "costume-jewelry", label: "时尚饰品" },
+  ],
+  garden: [
+    { id: "tools", label: "园艺工具" },
+    { id: "planters", label: "花盆/种植箱" },
+    { id: "outdoor-furniture", label: "户外家具" },
+    { id: "lighting-garden", label: "花园照明" },
+    { id: "irrigation", label: "灌溉系统" },
+    { id: "pesticide", label: "农药/除草剂" },
   ],
 };
 
@@ -331,6 +349,29 @@ export const categoryComplianceData: Record<string, Record<string, ComplianceIte
     eu: [
       { name: "MDR 医疗器械法规", required: true, desc: "欧盟医疗器械法规2017/745", severity: "high", action: "联系欧盟公告机构进行MDR认证", estimatedTime: "6-12周", needsThirdParty: true },
       { name: "CE 医疗器械认证", required: true, desc: "医疗器械强制CE认证", severity: "high", action: "准备技术文档、临床评估", estimatedTime: "6-12周", needsThirdParty: true },
+    ],
+  },
+
+  // 珠宝饰品
+  jewelry: {
+    us: [
+      { name: "FTC 珠宝标签", required: true, desc: "贵金属纯度标识（如14K、18K、925银）", severity: "medium", action: "确保标签标注准确的金属纯度", estimatedTime: "1周", needsThirdParty: false },
+      { name: "Prop 65 铅镉检测", required: false, desc: "饰品可能含铅镉等重金属，需警告标签或合规", severity: "medium", action: "进行重金属含量检测，如有风险则添加 Prop 65 警告", estimatedTime: "1-2周", needsThirdParty: true },
+    ],
+    eu: [
+      { name: "EU 镍释放测试", required: true, desc: "饰品接触皮肤部分镍释放量受限", severity: "high", action: "进行EN 1811镍释放量测试", estimatedTime: "1-2周", needsThirdParty: true },
+      { name: "REACH 重金属限制", required: true, desc: "饰品材料需符合REACH重金属限制", severity: "high", action: "供应商提供材料合规声明", estimatedTime: "1周", needsThirdParty: false },
+    ],
+  },
+
+  // 园艺户外
+  garden: {
+    us: [
+      { name: "EPA 农药注册", required: true, desc: "杀虫剂/除草剂/杀菌剂需EPA注册", severity: "high", action: "向EPA提交农药产品注册申请", estimatedTime: "4-12周", needsThirdParty: true },
+      { name: "Prop 65 园艺化学品", required: false, desc: "土壤/肥料可能含重金属需警告", severity: "medium", action: "检测土壤/肥料成分", estimatedTime: "1-2周", needsThirdParty: true },
+    ],
+    eu: [
+      { name: "EU 1107/2009 农药法规", required: true, desc: "植物保护产品需EU批准", severity: "high", action: "向ECHA申请授权", estimatedTime: "8-16周", needsThirdParty: true },
     ],
   },
 };
