@@ -1,4 +1,4 @@
-export const siteConfig = {
+﻿export const siteConfig = {
   name: "合规猫",
   tagline: "亚马逊合规排查助手",
   description: "专业的亚马逊合规检查工具，帮助卖家快速排查产品合规风险，生成合规报告，支持申诉指导。",
@@ -36,6 +36,10 @@ export const subCategories: Record<string, { id: string; label: string }[]> = {
     { id: "smart-home", label: "智能家居" },
     { id: "camera", label: "相机/摄影" },
     { id: "computer", label: "电脑/平板配件" },
+    { id: "smart-watch", label: "智能手表/手环" },
+    { id: "power-bank", label: "充电宝" },
+    { id: "led", label: "LED灯具/灯带" },
+    { id: "adapter", label: "电源适配器" },
   ],
   toys: [
     { id: "plush", label: "毛绒玩具" },
@@ -372,6 +376,7 @@ export const categoryComplianceData: Record<string, Record<string, ComplianceIte
     ],
     eu: [
       { name: "EU 1107/2009 农药法规", required: true, desc: "植物保护产品需EU批准", severity: "high", action: "向ECHA申请授权", estimatedTime: "8-16周", needsThirdParty: true },
+      { name: "REACH 园艺化学品", required: true, desc: "园艺产品材料需符合REACH", severity: "high", action: "确认材料无SVHC物质", estimatedTime: "1-2周", needsThirdParty: true },
     ],
   },
 };
