@@ -55,17 +55,31 @@ export function Report() {
     const runDiagnosis = async () => {
       setAiLoading(true);
       try {
-        const result = await generateDiagnosis(
-          (stateProfile || profile) as ProductProfile,
-          mappedMarket,
-          aiProduct
-        );
+        // AI 模式下，优先使用从对话中推断的 profile
+        const useProfile = stateProfile || {
+          product_type: aiProduct,
+          category: "electronics",
+          has_battery: null,
+          battery_capacity: null,
+          has_wireless: null,
+          is_children: null,
+          food_contact: null,
+          wearable: null,
+          medical: null,
+          electrical: null,
+          contains_chemicals: null,
+          contains_magnets: null,
+          precision: null,
+          has_flammable: null,
+        } as ProductProfile;
+
+        const result = await generateDiagnosis(useProfile, mappedMarket, aiProduct);
         setAiResult(result);
         // 保存到历史
         store.saveReport({
           productType: aiProduct,
           market: marketId,
-          profile: { ...(stateProfile as Record<string, unknown>) },
+          profile: { ...(useProfile as Record<string, unknown>) },
           diagnosis: { ...result },
         });
       } catch (err) {
@@ -76,7 +90,7 @@ export function Report() {
     };
 
     runDiagnosis();
-  }, [isAiMode, aiProduct, marketId, location.state, profile]);
+  }, [isAiMode, aiProduct, marketId, location.state]);
 
   const highCount = recommendations.filter((i) => i.severity === "high" && i.required).length;
   const mediumCount = recommendations.filter((i) => i.severity === "medium").length;

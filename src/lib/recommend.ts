@@ -22,31 +22,73 @@ interface ProductProfile {
   importRate: "high" | "medium" | "low";
 }
 
-// 根据品类和子品类推断产品特征
+// 根据品类和子品类推断产品特征（增强版）
 export function inferProductProfile(catId: string, subId: string): ProductProfile {
-  const batteryKeywords = ["charger", "power", "battery", "headphone", "smart-home", "computer", "camera", "electronics-auto"];
-  const wirelessKeywords = ["headphone", "smart-home", "camera", "charger"];
-  const childrenKeywords = ["toys", "baby", "educational", "plush", "feeding", "diaper", "safety", "nursery"];
-  const foodContactKeywords = ["cookware", "kitchen-tool", "feeding", "cookware", "supplement", "snack", "beverage"];
-  const wearableKeywords = ["apparel", "shoes", "accessories", "swimwear", "protective", "cosmetics", "skincare", "hair-care"];
-  const medicalKeywords = ["massager", "thermometer", "medical-device", "oral-care"];
-  const outdoorKeywords = ["camping", "cycling", "water-sports", "sports", "outdoor-play"];
-  const chemicalKeywords = ["cosmetics", "skincare", "fragrance", "nail", "herbal", "supplement", "health"];
+  // 电池特征
+  const batterySubs = ["charger", "power", "battery", "headphone", "smart-home", "computer", "camera", "electronics-auto",
+                       "remote-control", "fitness", "cycling", "electronics-auto"];
+  const batteryCats = ["electronics", "sports", "auto", "office"];
+  // 无线特征
+  const wirelessSubs = ["headphone", "smart-home", "camera", "charger", "remote-control", "cycling", "camera"];
+  // 儿童特征
+  const childrenSubs = ["educational", "plush", "outdoor-play", "board-game", "remote-control", "feeding", "diaper",
+                        "safety", "nursery", "feeding", "stroller", "safety"];
+  const childrenCats = ["toys", "baby"];
+  // 食品接触
+  const foodContactSubs = ["cookware", "kitchen-tool", "feeding", "cookware", "supplement", "snack", "beverage",
+                           "kitchen-tool", "cookware"];
+  const foodContactCats = ["food", "baby"];
+  // 穿戴
+  const wearableSubs = ["apparel", "shoes", "accessories", "swimwear", "uniform", "protective",
+                        "cosmetics", "skincare", "nail", "hair-care", "fragrance"];
+  const wearableCats = ["clothing", "beauty"];
+  // 医疗
+  const medicalSubs = ["medical-device", "massager", "oral-care", "thermometer"];
+  const medicalCats = ["health"];
+  // 户外
+  const outdoorSubs = ["camping", "cycling", "water-sports", "outdoor-play"];
+  const outdoorCats = ["sports", "garden"];
+  // 化学品
+  const chemicalSubs = ["cosmetics", "skincare", "fragrance", "nail", "herbal", "supplement"];
+  const chemicalCats = ["beauty", "food", "garden"];
+  // 带电
+  const electricalCats = ["electronics", "smart-home", "camera", "computer"];
+  const electricalSubs = ["charger", "headphone", "smart-home", "computer", "camera", "electronics-auto",
+                          "lighting", "lighting-garden", "electronics-auto"];
+  // 磁铁
+  const magnetSubs = ["headphone", "smart-home", "earring", "bracelet", "smart-home", "camera"];
+  // 精密
+  const precisionSubs = ["camera", "thermometer", "medical-device", "massager", "watch"];
+  // 易燃
+  const flammableSubs = ["cosmetics", "fragrance", "nail", "herbal", "pesticide"];
+  const flammableCats = ["garden", "beauty"];
+
+  const isBattery = batterySubs.includes(subId) || batteryCats.includes(catId);
+  const isWireless = wirelessSubs.includes(subId);
+  const isChildren = childrenSubs.includes(subId) || childrenCats.includes(catId);
+  const isFoodContact = foodContactSubs.includes(subId) || foodContactCats.includes(catId);
+  const isWearable = wearableSubs.includes(subId) || wearableCats.includes(catId);
+  const isMedical = medicalSubs.includes(subId) || medicalCats.includes(catId);
+  const isOutdoor = outdoorSubs.includes(subId) || outdoorCats.includes(catId);
+  const isChemical = chemicalSubs.includes(subId) || chemicalCats.includes(catId);
+  const isElectrical = electricalCats.includes(catId) || electricalSubs.includes(subId);
+  const isMagnet = magnetSubs.includes(subId);
+  const isPrecision = precisionSubs.includes(subId);
+  const isFlammable = flammableSubs.includes(subId) || flammableCats.includes(catId);
 
   return {
-    hasBattery: batteryKeywords.includes(subId) || batteryKeywords.some(k => catId.includes(k)),
-    hasWireless: wirelessKeywords.includes(subId),
-    isChildrenProduct: childrenKeywords.includes(subId) || childrenKeywords.some(k => catId.includes(k)),
-    foodContact: foodContactKeywords.includes(subId),
-    wearable: wearableKeywords.includes(subId),
-    medical: medicalKeywords.includes(subId),
-    outdoor: outdoorKeywords.includes(subId),
-    containsChemicals: chemicalKeywords.includes(subId),
-    electrical: ["electronics", "computer", "charger", "headphone", "smart-home", "camera", "electronics-auto"].includes(catId) || 
-                 ["charger", "headphone", "smart-home", "computer", "camera"].includes(subId),
-    precision: ["thermometer", "medical-device", "massager", "camera"].includes(subId),
-    importRate: ["auto", "pet", "food", "health"].includes(catId) ? "high" : 
-                ["electronics", "toys", "beauty", "home"].includes(catId) ? "high" : "medium",
+    hasBattery: isBattery,
+    hasWireless: isWireless,
+    isChildrenProduct: isChildren,
+    foodContact: isFoodContact,
+    wearable: isWearable,
+    medical: isMedical,
+    outdoor: isOutdoor,
+    containsChemicals: isChemical,
+    electrical: isElectrical,
+    precision: isPrecision,
+    importRate: ["auto", "pet", "food", "health", "garden"].includes(catId) ? "high" : 
+                ["electronics", "toys", "beauty", "home", "baby"].includes(catId) ? "high" : "medium",
   };
 }
 
