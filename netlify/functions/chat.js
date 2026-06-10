@@ -201,7 +201,7 @@ async function searchViaDuckDuckGo(query: string, headers: Record<string, string
 }
 
 /**
- * AI 对话处理
+ * AI 对话处理（支持 Agnes 自身搜索）
  */
 async function handleAIChat(event, headers, body, apiKey: string) {
   const { action, prompt, message } = body;
@@ -211,21 +211,35 @@ async function handleAIChat(event, headers, body, apiKey: string) {
   
   // 优先使用自定义端点
   const BASE_URL = process.env.AI_BASE_URL || "https://api.agnes.ai";
+  const MODEL = process.env.AI_MODEL || "agnes-1.5-pro";
   
   if (action === "extract-profile" || action === "diagnose" || action === "appeal" || action === "short-reply") {
     apiUrl = `${BASE_URL}/v1/chat/completions`;
     
     // 构建消息体（兼容 OpenAI 格式）
-    const systemMessage = prompt || "你是一个智能助手。";
-    const userContent = message || "";
+    let systemMessage = prompt || "你是一个智能助手。";
+    let userContent = message || "";
+    
+    // ===== 诊断时注入搜索提示 =====
+    if (action === "diagnose" && userContent) {
+      // 从 userContent 提取产品名和市场
+      const productMatch = userContent.match(/产品类型：([\s\S]*?)\n/);
+      const marketMatch = userContent.match(/目标市场：([\S]+)/);
+      if (productMatch && marketMatch) {
+        const productName = productMatch[1].trim();
+        const marketName = marketMatch[1].trim();
+        // 在 prompt 中加入搜索指令
+        systemMessage += `\n\n【联网搜索要求】\n在生成诊断前，请先联网搜索以下关键词的最新合规信息：\n"${productName} Amazon ${marketName} 合规认证要求"\n将搜索结果作为诊断的重要依据。`;
+      }
+    }
     
     apiBody = {
-      model: process.env.AI_MODEL || "agnes-2.0-flash",
+      model: MODEL,
       messages: [
         { role: "system", content: systemMessage },
         { role: "user", content: userContent },
       ],
-      temperature: 0.3, // 低温度，输出更稳定
+      temperature: 0.3,
       max_tokens: 4096,
     };
   } else {
@@ -235,7 +249,7 @@ async function handleAIChat(event, headers, body, apiKey: string) {
       { role: "user", content: message || "" },
     ];
     apiBody = {
-      model: process.env.AI_MODEL || "agnes-2.0-flash",
+      model: MODEL,
       messages,
       temperature: 0.3,
       max_tokens: 4096,
