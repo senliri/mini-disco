@@ -210,11 +210,11 @@ async function handleAIChat(event, headers, body, apiKey: string) {
   let apiUrl, apiBody;
   
   // 优先使用自定义端点
-  const BASE_URL = process.env.AI_BASE_URL || "https://api.agnes.ai";
-  const MODEL = process.env.AI_MODEL || "agnes-1.5-pro";
+  const BASE_URL = process.env.AI_BASE_URL || "https://apihub.agnes-ai.com/v1/chat/completions";
+  const MODEL = process.env.AI_MODEL || "agnes-2.0-flash";
   
   if (action === "extract-profile" || action === "diagnose" || action === "appeal" || action === "short-reply") {
-    apiUrl = `${BASE_URL}/v1/chat/completions`;
+    apiUrl = BASE_URL;
     
     // 构建消息体（兼容 OpenAI 格式）
     let systemMessage = prompt || "你是一个智能助手。";
@@ -244,7 +244,7 @@ async function handleAIChat(event, headers, body, apiKey: string) {
     };
   } else {
     // 通用聊天模式
-    apiUrl = `${BASE_URL}/v1/chat/completions`;
+    apiUrl = BASE_URL;
     const messages = body.messages || [
       { role: "user", content: message || "" },
     ];
