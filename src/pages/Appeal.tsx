@@ -1,10 +1,68 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, FileText, Shield, AlertTriangle, CheckCircle, Upload, Mail, MessageSquare, Calendar, ChevronDown } from "lucide-react";
+import { ArrowLeft, FileText, Shield, AlertTriangle, CheckCircle, Upload, Mail, MessageSquare, Calendar, ChevronDown, Sparkles, Loader2, Copy } from "lucide-react";
 
 export function Appeal() {
   const [activeTab, setActiveTab] = useState<"appeal" | "archive">("appeal");
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
+  const [productType, setProductType] = useState("");
+  const [reason, setReason] = useState("");
+  const [actions, setActions] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [appealResult, setAppealResult] = useState<{ rootCause?: string; poaTemplate?: string; correctiveActions?: string[]; preventiveMeasures?: string[] } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleGenerateAppeal = async () => {
+    if (!productType || !reason) return;
+    setIsGenerating(true);
+    setCopied(false);
+    try {
+      const response = await fetch("/.netlify/functions/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "appeal",
+          prompt: `你是亚马逊申诉专家。根据用户提供的下架原因，生成申诉方案。
+
+产品信息：${productType}
+下架原因：${reason}
+已采取措施：${actions || "未提供"}
+
+输出格式（严格 JSON）：
+{
+  "rootCause": "根本原因分析",
+  "correctiveActions": ["措施1", "措施2"],
+  "preventiveMeasures": ["措施1", "措施2"],
+  "poatemplate": "完整的申诉信模板（英文，500-1000字）",
+  "checklist": ["材料1", "材料2"],
+  "tips": "申诉技巧"
+}`,
+          message: "请生成完整的申诉方案",
+        }),
+      });
+
+      if (!response.ok) throw new Error("请求失败");
+      const data = await response.json();
+      const reply = data.reply || data.content || "";
+      const cleaned = reply.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("AI 返回格式异常");
+      setAppealResult(JSON.parse(jsonMatch[0]));
+    } catch (err) {
+      console.error("生成申诉信失败:", err);
+      alert("申诉信生成失败，请稍后重试。");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const copyPOA = () => {
+    if (!appealResult?.poaTemplate) return;
+    const text = typeof appealResult.poaTemplate === "string" ? appealResult.poaTemplate : String(appealResult.poaTemplate);
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div>
@@ -33,7 +91,113 @@ export function Appeal() {
         <section className="mx-auto mt-6 max-w-7xl px-4 sm:px-6">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
             <h1 className="text-2xl font-bold">亚马逊申诉指导</h1>
-            <p className="mt-1 text-sm text-slate-400">产品被下架或收到合规警告？按照以下步骤准备申诉材料</p>
+            <p className="mt-1 text-sm text-slate-400">产品被下架或收到合规警告？按以下步骤准备申诉材料</p>
+
+            {/* AI 申诉信生成器 */}
+            <div className="mt-6 rounded-2xl border border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-blue-500/5 p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="h-5 w-5 text-purple-400" />
+                <h2 className="text-lg font-semibold text-purple-300">AI 申诉信生成器</h2>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm text-slate-300 mb-1 block">产品类型</label>
+                  <input
+                    type="text"
+                    placeholder="如：蓝牙音箱、儿童毛绒玩具、食品保鲜盒"
+                    value={productType}
+                    onChange={(e) => setProductType(e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-white placeholder-slate-500 outline-none focus:border-purple-500/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-300 mb-1 block">下架原因</label>
+                  <select
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-white outline-none focus:border-purple-500/50"
+                  >
+                    <option value="">请选择下架原因</option>
+                    <option value="产品安全性投诉">产品安全性投诉</option>
+                    <option value="合规文件缺失">合规文件缺失</option>
+                    <option value="产品标签不合规">产品标签不合规</option>
+                    <option value="受限产品违规">受限产品违规</option>
+                    <option value="知识产权投诉">知识产权投诉</option>
+                    <option value="误分类/错放类目">误分类/错放类目</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm text-slate-300 mb-1 block">已采取的整改措施（可选）</label>
+                  <textarea
+                    rows={3}
+                    placeholder="如：已联系供应商获取最新检测报告、更新了产品包装标签、添加了警示说明等"
+                    value={actions}
+                    onChange={(e) => setActions(e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-white placeholder-slate-500 outline-none focus:border-purple-500/50 resize-none"
+                  />
+                </div>
+                <button
+                  onClick={handleGenerateAppeal}
+                  disabled={!productType || !reason || isGenerating}
+                  className="w-full rounded-xl bg-purple-600 py-2.5 text-sm font-medium text-white transition hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  {isGenerating ? "生成中..." : "生成申诉信"}
+                </button>
+              </div>
+              {appealResult && (
+                <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-purple-300">申诉方案</span>
+                    <button
+                      onClick={copyPOA}
+                      className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition"
+                    >
+                      <Copy className="h-3 w-3" />
+                      {copied ? "已复制" : "复制"}
+                    </button>
+                  </div>
+                  {/* 根本原因 */}
+                  {appealResult?.rootCause && (
+                    <div className="mb-3">
+                      <h4 className="text-xs font-semibold text-slate-300 mb-1">📋 根本原因分析</h4>
+                      <p className="text-sm text-slate-300">{appealResult.rootCause}</p>
+                    </div>
+                  )}
+                  {/* 申诉信模板 */}
+                  {appealResult?.poaTemplate && (
+                    <div className="mb-3 rounded-lg bg-white/5 p-3">
+                      <h4 className="text-xs font-semibold text-blue-300 mb-2">📝 申诉信模板（英文）</h4>
+                      <div className="text-sm text-slate-200 whitespace-pre-wrap max-h-64 overflow-y-auto">
+                        {appealResult.poaTemplate}
+                      </div>
+                    </div>
+                  )}
+                  {/* 整改措施 */}
+                  {appealResult.correctiveActions && (appealResult.correctiveActions as string[]).length > 0 && (
+                    <div className="mb-2">
+                      <h4 className="text-xs font-semibold text-green-300 mb-1">✅ 已采取措施</h4>
+                      {(appealResult.correctiveActions as string[]).map((a, i) => (
+                        <p key={i} className="text-xs text-slate-300 mb-1">• {String(a)}</p>
+                      ))}
+                    </div>
+                  )}
+                  {/* 预防措施 */}
+                  {appealResult.preventiveMeasures && (
+                    <div className="mb-2">
+                      <h4 className="text-xs font-semibold text-amber-300 mb-1">🛡️ 未来预防措施</h4>
+                      {appealResult.preventiveMeasures!.map((p, i) => (
+                        <p key={i} className="text-xs text-slate-300 mb-1">• {p}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="mt-6">
               <h2 className="text-lg font-semibold">常见下架原因</h2>

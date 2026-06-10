@@ -3,6 +3,10 @@ import { siteConfig } from "../data/site";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const navItems = [
+    { label: "AI 诊断", href: "/" },
+    { label: "申诉/档案", href: "/appeal" },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -14,7 +18,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <span className="hidden text-sm text-slate-400 sm:inline">{siteConfig.tagline}</span>
           </Link>
           <nav className="flex items-center gap-1 overflow-x-auto text-sm sm:gap-2">
-            {siteConfig.nav.map((item) => {
+            {navItems.map((item) => {
               const isActive = location.pathname === item.href;
               return (
                 <Link
