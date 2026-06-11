@@ -26,6 +26,9 @@ export const productCategories = [
   { id: "health", label: "Health & Medical", icon: "💊" },
   { id: "jewelry", label: "Jewelry", icon: "💍" },
   { id: "garden", label: "Garden & Outdoor", icon: "🌿" },
+  { id: "books_media", label: "Books & Media", icon: "📚" },
+  { id: "health_supplements", label: "Health Supplements", icon: "💉" },
+  { id: "luggage_travel", label: "Luggage & Travel", icon: "✈️" },
 ];
 
 export const subCategories: Record<string, { id: string; label: string }[]> = {
@@ -129,6 +132,30 @@ export const subCategories: Record<string, { id: string; label: string }[]> = {
     { id: "lighting-garden", label: "Garden Lighting" },
     { id: "irrigation", label: "Irrigation Systems" },
     { id: "pesticide", label: "Pesticides & Herbicides" },
+  ],
+  books_media: [
+    { id: "books", label: "Books" },
+    { id: "vinyl", label: "Vinyl Records" },
+    { id: "cd_dvd", label: "CDs & DVDs" },
+    { id: "magazines", label: "Magazines" },
+    { id: "digital_media", label: "Digital Media" },
+    { id: "school_supplies", label: "School Supplies" },
+  ],
+  health_supplements: [
+    { id: "vitamins", label: "Vitamins & Minerals" },
+    { id: "protein", label: "Protein & Fitness" },
+    { id: "herbal", label: "Herbal Supplements" },
+    { id: "probiotics", label: "Probiotics" },
+    { id: "weight_loss", label: "Weight Management" },
+    { id: "omega3", label: "Omega-3 & Fish Oil" },
+  ],
+  luggage_travel: [
+    { id: "suitcase", label: "Suitcases" },
+    { id: "backpack", label: "Backpacks" },
+    { id: "travel_organizer", label: "Travel Organizers" },
+    { id: "luggage_lock", label: "Luggage Locks" },
+    { id: "travel_adapter", label: "Travel Adapters" },
+    { id: "neck_pillow", label: "Neck Pillows" },
   ],
 };
 
@@ -377,6 +404,48 @@ export const categoryComplianceData: Record<string, Record<string, ComplianceIte
     eu: [
       { name: "EU 1107/2009 农药法规", required: true, desc: "植物保护产品需EU批准", severity: "high", action: "向ECHA申请授权", estimatedTime: "8-16周", needsThirdParty: true },
       { name: "REACH 园艺化学品", required: true, desc: "园艺产品材料需符合REACH", severity: "high", action: "确认材料无SVHC物质", estimatedTime: "1-2周", needsThirdParty: true },
+    ],
+  },
+
+  // 书籍媒体
+  books_media: {
+    us: [
+      { name: "CPSIA (儿童书籍)", required: false, desc: "儿童书籍需符合CPSIA安全标准", severity: "high", action: "确认目标年龄，如为儿童产品需CPC", estimatedTime: "2-3周", needsThirdParty: true },
+      { name: "FTC 标签要求", required: false, desc: "出版商需确保产品描述和标签符合FTC规定", severity: "medium", action: "确认产品描述准确，无误导性宣传", estimatedTime: "1周", needsThirdParty: false },
+      { name: "版权合规", required: true, desc: "确保产品不侵犯版权", severity: "high", action: "确认产品来源合法，获得出版授权", estimatedTime: "1周", needsThirdParty: false },
+    ],
+    eu: [
+      { name: "CE (儿童书籍)", required: false, desc: "儿童书籍需符合CE安全标准", severity: "high", action: "确认产品符合EN71标准", estimatedTime: "2-3周", needsThirdParty: true },
+      { name: "REACH (油墨安全)", required: true, desc: "印刷油墨需符合REACH SVHC限制", severity: "medium", action: "确认印刷材料符合REACH要求", estimatedTime: "1-2周", needsThirdParty: true },
+    ],
+  },
+
+  // 保健品
+  health_supplements: {
+    us: [
+      { name: "FDA 膳食补充剂注册", required: true, desc: "膳食补充剂工厂需在FDA注册", severity: "high", action: "在FDA官网进行facility registration", estimatedTime: "1-2周", needsThirdParty: false },
+      { name: "DSHEA 合规", required: true, desc: "膳食补充剂健康与教育法案合规", severity: "high", action: "确保标签符合DSHEA要求，不做医疗声明", estimatedTime: "1-2周", needsThirdParty: false },
+      { name: "GMP 生产标准", required: true, desc: "膳食补充剂需符合21 CFR Part 111 GMP标准", severity: "high", action: "确认工厂通过GMP认证", estimatedTime: "2-4周", needsThirdParty: true },
+      { name: "NLEA 营养标签", required: true, desc: "营养标签需符合NLEA规定", severity: "medium", action: "确认标签格式和内容符合NLEA", estimatedTime: "1周", needsThirdParty: false },
+      { name: "Prop 65", required: false, desc: "补充剂可能含需警告的成分", severity: "medium", action: "确认产品不含Prop 65限制成分或添加警告标签", estimatedTime: "1周", needsThirdParty: false },
+    ],
+    eu: [
+      { name: "EFSA 新型食品法规", required: false, desc: "新型食品需EFSA批准", severity: "high", action: "确认产品是否属于Novel Food范畴", estimatedTime: "4-12周", needsThirdParty: true },
+      { name: "EU 1924/2006 营养标签", required: true, desc: "营养和健康声称需符合EU法规", severity: "high", action: "确保标签不含有未经批准的声称", estimatedTime: "1-2周", needsThirdParty: false },
+      { name: "REACH 原料合规", required: true, desc: "补充剂原料需符合REACH", severity: "high", action: "供应商提供REACH合规声明", estimatedTime: "1-2周", needsThirdParty: true },
+    ],
+  },
+
+  // 箱包旅行
+  luggage_travel: {
+    us: [
+      { name: "TSA 锁认证", required: false, desc: "旅行锁需通过TSA认证", severity: "medium", action: "联系TSA认证机构申请锁具认证", estimatedTime: "2-4周", needsThirdParty: true },
+      { name: "Prop 65 (箱包材料)", required: false, desc: "箱包材料可能含需警告的化学物质", severity: "medium", action: "确认材料不含Prop 65限制成分", estimatedTime: "1-2周", needsThirdParty: false },
+      { name: "阻燃测试 (行李箱)", required: false, desc: "行李箱需通过阻燃测试", severity: "medium", action: "确认材料符合阻燃标准", estimatedTime: "2-3周", needsThirdParty: true },
+    ],
+    eu: [
+      { name: "REACH 箱包材料", required: true, desc: "箱包材料需符合REACH", severity: "high", action: "确认材料无SVHC物质", estimatedTime: "1-2周", needsThirdParty: true },
+      { name: "CE (带电子功能的箱包)", required: false, desc: "带USB充电等功能的箱包需CE认证", severity: "high", action: "确认产品含电子功能，进行CE符合性评估", estimatedTime: "2-4周", needsThirdParty: true },
     ],
   },
 };
