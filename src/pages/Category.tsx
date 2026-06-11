@@ -12,13 +12,13 @@ export function Category() {
     <div>
       <section className="mx-auto mt-6 max-w-7xl px-4 sm:px-6">
         <div className="flex items-center gap-2 text-sm text-slate-400">
-          <Link to="/" className="hover:text-white">首页</Link>
+          <Link to="/" className="hover:text-white">Home</Link>
           <span>/</span>
-          <span className="text-slate-200">{category?.label || "分类"}</span>
+          <span className="text-slate-200">{category?.label || "Category"}</span>
         </div>
         <Link to="/" className="mt-4 inline-flex items-center gap-1 text-sm text-slate-400 transition hover:text-white">
           <ArrowLeft className="h-4 w-4" />
-          返回选择大类
+          Back to Categories
         </Link>
       </section>
 
@@ -27,8 +27,8 @@ export function Category() {
           <div className="flex items-center gap-4">
             <span className="text-5xl">{category?.icon}</span>
             <div>
-              <h1 className="text-2xl font-bold">{category?.label || "未找到分类"}</h1>
-              <p className="mt-1 text-sm text-slate-400">选择具体类型 — 选对了报告才准</p>
+              <h1 className="text-2xl font-bold">{category?.label || "Category Not Found"}</h1>
+              <p className="mt-1 text-sm text-slate-400">Select a specific type — accuracy depends on the right category</p>
             </div>
           </div>
         </div>
@@ -36,18 +36,18 @@ export function Category() {
 
       <section className="mx-auto mt-8 max-w-7xl px-4 sm:px-6">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">精细子分类</h2>
+          <h2 className="text-lg font-semibold">Subcategories</h2>
           <span className="rounded-full border border-white/10 px-2.5 py-0.5 text-xs text-slate-400">
-            {subs.length} 项
+            {subs.length} items
           </span>
         </div>
 
         {subs.length === 0 ? (
           <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center">
             <AlertTriangle className="mx-auto h-10 w-10 text-slate-500" />
-            <p className="mt-3 text-slate-400">该大类的精细分类数据正在完善中</p>
+            <p className="mt-3 text-slate-400">Subcategory data for this category is being updated</p>
             <Link to="/market" className="mt-4 inline-flex items-center gap-1 rounded-xl bg-blue-600 px-5 py-2 text-sm text-white transition hover:bg-blue-700">
-              跳过，用大类默认数据
+              Skip, use default category data
             </Link>
           </div>
         ) : (
@@ -71,9 +71,9 @@ export function Category() {
           <div className="flex items-start gap-3">
             <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
             <div>
-              <h3 className="font-semibold text-amber-300">提示</h3>
+              <h3 className="font-semibold text-amber-300">Tip</h3>
               <p className="mt-1 text-sm text-slate-400">
-                选择精细子分类可获得更准确的合规清单和检测项。如果不确定具体类型，可以选择"跳过"使用大类默认数据。
+                Selecting a specific subcategory provides more accurate compliance checklists and test items. If you're unsure, you can skip and use the default category data.
               </p>
             </div>
           </div>

@@ -33,18 +33,18 @@ export function Report() {
   const sub = subCategories[catId]?.find((s) => s.id === subId);
   const market = markets.find((m) => m.id === marketId);
 
-  // 按品类×市场联动获取合规数据
+  // Fetch compliance data by category x market
   const rawCompliance = categoryComplianceData[catId]?.[marketId]
     || categoryComplianceData[catId]?.["us"]
     || categoryComplianceData["electronics"]?.[marketId]
     || categoryComplianceData["electronics"]?.["us"]
     || [];
 
-  // 智能推荐：根据产品特征生成
+  // Smart recommendations based on product features
   const profile = inferProductProfile(catId, subId);
   const recommendations = generateRecommendations(rawCompliance, marketId, profile, catId);
 
-  // AI 模式：从对话模式过来，调用 AI 诊断
+  // AI mode: generate diagnosis from chat conversation
   useEffect(() => {
     if (!isAiMode || !aiProduct) return;
     
@@ -55,7 +55,6 @@ export function Report() {
     const runDiagnosis = async () => {
       setAiLoading(true);
       try {
-        // AI 模式下，优先使用从对话中推断的 profile
         const useProfile = stateProfile || {
           product_type: aiProduct,
           category: "electronics",
@@ -75,7 +74,7 @@ export function Report() {
 
         const result = await generateDiagnosis(useProfile, mappedMarket, aiProduct);
         setAiResult(result);
-        // 保存到历史
+        // Save to history
         store.saveReport({
           productType: aiProduct,
           market: marketId,
@@ -83,7 +82,7 @@ export function Report() {
           diagnosis: { ...result },
         });
       } catch (err) {
-        console.error("AI 诊断失败:", err);
+        console.error("AI diagnosis failed:", err);
       } finally {
         setAiLoading(false);
       }
@@ -96,7 +95,7 @@ export function Report() {
   const mediumCount = recommendations.filter((i) => i.severity === "medium").length;
   const recommendCount = recommendations.filter((r) => r.confidence === "high").length;
 
-  // PDF 导出
+  // PDF Export
   const handleExportPDF = async () => {
     setIsGenerating(true);
     try {
@@ -105,67 +104,66 @@ export function Report() {
 
       const doc = new jsPDF();
 
-      // 标题
+      // Title
       doc.setFontSize(20);
-      doc.text("合规检查报告", 14, 20);
+      doc.text("Compliance Check Report", 14, 20);
 
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.text(
-        `${market?.label || "美国"} · ${category?.label || "通用"}${sub ? ` · ${sub.label}` : ""}`,
+        `${market?.label || "US"} · ${category?.label || "General"}${sub ? ` · ${sub.label}` : ""}`,
         14,
         30
       );
-      doc.text(`生成日期：${new Date().toLocaleDateString("zh-CN")}`, 14, 37);
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 37);
 
-      // 如果 AI 模式，使用 AI 诊断结果作为摘要
       const summary = isAiMode && aiResult ? aiResult.summary : "";
       const warnings = isAiMode && aiResult ? aiResult.warnings : [];
 
-      // AI 推荐摘要
+      // AI recommendation summary
       doc.setFontSize(14);
       doc.setTextColor(0);
-      doc.text("AI 智能推荐", 14, 50);
+      doc.text("AI Smart Recommendations", 14, 50);
       doc.setFontSize(9);
       doc.setTextColor(60);
       if (summary) {
         doc.text(summary, 14, 58, { maxWidth: 180 });
       } else {
-        doc.text(`推荐处理项：${recommendCount} 个（高优先级）`, 14, 58);
+        doc.text(`Recommended actions: ${recommendCount} (high priority)`, 14, 58);
       }
-      doc.text(`高风险强制项：${highCount} 个`, 14, 65);
+      doc.text(`High-risk mandatory items: ${highCount}`, 14, 65);
 
-      // 表格
+      // Table
       const tableData = recommendations.map((item) => [
         item.name,
-        item.required ? "强制" : "建议",
-        item.severity === "high" ? "高" : item.severity === "medium" ? "中" : "低",
+        item.required ? "Mandatory" : "Recommended",
+        item.severity === "high" ? "High" : item.severity === "medium" ? "Medium" : "Low",
         item.reason,
         item.action,
       ]);
 
       autoTable(doc, {
         startY: 72,
-        head: [["认证项目", "类型", "等级", "AI 推荐理由", "整改建议"]],
+        head: [["Certification", "Type", "Level", "AI Reason", "Action"]],
         body: tableData,
         theme: "grid",
         headStyles: { fillColor: [37, 99, 235] },
         styles: { fontSize: 7 },
       });
 
-      // 免责声明
+      // Disclaimer
       doc.setFontSize(8);
       doc.setTextColor(150);
       doc.text(
-        "免责声明：本报告仅供参考，不构成法律意见。合规要求可能随时更新，请以监管机构最新信息为准。",
+        "Disclaimer: This report is for reference only and does not constitute legal advice. Compliance requirements may change. Please refer to the latest information from regulatory authorities.",
         14,
         doc.internal.pageSize.height - 10
       );
 
-      doc.save(`合规猫_报告_${marketId}_${catId}.pdf`);
+      doc.save(`compliance_cat_report_${marketId}_${catId}.pdf`);
     } catch (err) {
-      console.error("PDF导出失败:", err);
-      alert("PDF 导出失败，请稍后重试。");
+      console.error("PDF export failed:", err);
+      alert("PDF export failed. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -175,13 +173,13 @@ export function Report() {
     <div>
       <section className="mx-auto mt-6 max-w-7xl px-4 sm:px-6">
         <div className="flex items-center gap-2 text-sm text-slate-400">
-          <Link to="/" className="hover:text-white">首页</Link>
+          <Link to="/" className="hover:text-white">Home</Link>
           <span>/</span>
-          <Link to={catId ? `/category?cat=${catId}` : "/"} className="hover:text-white">{category?.label || "选品类"}</Link>
+          <Link to={catId ? `/category?cat=${catId}` : "/"} className="hover:text-white">{category?.label || "Select Category"}</Link>
           <span>/</span>
-          <Link to={`/market?cat=${catId}&sub=${subId}`} className="hover:text-white">选市场</Link>
+          <Link to={`/market?cat=${catId}&sub=${subId}`} className="hover:text-white">Select Market</Link>
           <span>/</span>
-          <span className="text-slate-200">看报告</span>
+          <span className="text-slate-200">Report</span>
         </div>
       </section>
 
@@ -191,9 +189,9 @@ export function Report() {
             <div className="flex items-center gap-3">
               <FileText className="h-8 w-8 text-blue-400" />
               <div>
-                <h1 className="text-xl font-bold">合规检查报告</h1>
+                <h1 className="text-xl font-bold">Compliance Check Report</h1>
                 <p className="text-sm text-slate-400">
-                  {market?.flag} {market?.label || "美国"}
+                  {market?.flag} {market?.label || "US"}
                   {isAiMode && aiProduct && (
                     <span className="ml-1">
                       📦 {aiProduct}
@@ -205,31 +203,30 @@ export function Report() {
                   {sub && !isAiMode && (
                     <> · {sub.label}</>
                   )}
-                  {!category && !isAiMode && <span className="text-amber-400">⚠ 未选择品类，使用通用数据</span>}
+                  {!category && !isAiMode && <span className="text-amber-400">⚠ No category selected, using general data</span>}
                 </p>
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">
               <button onClick={() => setActiveTab("recommend")} className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm transition ${activeTab === "recommend" ? "bg-blue-600 text-white" : "border border-white/10 text-slate-400 hover:text-white"}`}>
                 <Sparkles className="h-3.5 w-3.5" />
-                AI 推荐
+                AI Recommendations
               </button>
               <button onClick={() => setActiveTab("compliance")} className={`rounded-xl px-4 py-2 text-sm transition ${activeTab === "compliance" ? "bg-blue-600 text-white" : "border border-white/10 text-slate-400 hover:text-white"}`}>
-                合规清单
+                Compliance Checklist
               </button>
               <button onClick={() => setActiveTab("action")} className={`rounded-xl px-4 py-2 text-sm transition ${activeTab === "action" ? "bg-blue-600 text-white" : "border border-white/10 text-slate-400 hover:text-white"}`}>
-                整改建议
+                Action Plan
               </button>
             </div>
           </div>
 
-          {/* AI 智能分析面板 */}
+          {/* AI Smart Analysis Panel */}
           <div className="mt-5 rounded-xl border border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-blue-500/5 p-4">
-            {/* AI 模式：显示摘要 */}
             {isAiMode && aiLoading && (
               <div className="flex items-center gap-2 text-sm text-purple-300 mb-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                AI 正在分析产品合规风险...
+                AI is analyzing product compliance risks...
               </div>
             )}
             {isAiMode && aiResult && (
@@ -251,62 +248,61 @@ export function Report() {
             )}
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-purple-400" />
-              <span className="text-sm font-semibold text-purple-300">AI 智能分析</span>
-              <span className="text-xs text-purple-400/70 ml-auto">基于产品特征自动匹配</span>
+              <span className="text-sm font-semibold text-purple-300">AI Smart Analysis</span>
+              <span className="text-xs text-purple-400/70 ml-auto">Auto-matched based on product features</span>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div className="rounded-lg bg-white/5 px-3 py-2 text-center">
                 <p className="text-lg font-bold text-purple-300">{recommendCount}</p>
-                <p className="text-xs text-purple-400/70">优先处理</p>
+                <p className="text-xs text-purple-400/70">Priority</p>
               </div>
               <div className="rounded-lg bg-white/5 px-3 py-2 text-center">
                 <p className="text-lg font-bold text-red-400">{highCount}</p>
-                <p className="text-xs text-red-400/70">高风险项</p>
+                <p className="text-xs text-red-400/70">High Risk</p>
               </div>
               <div className="rounded-lg bg-white/5 px-3 py-2 text-center">
                 <p className="text-lg font-bold text-amber-400">{mediumCount}</p>
-                <p className="text-xs text-amber-400/70">中风险项</p>
+                <p className="text-xs text-amber-400/70">Medium Risk</p>
               </div>
               <div className="rounded-lg bg-white/5 px-3 py-2 text-center">
                 <p className="text-lg font-bold text-blue-400">{rawCompliance.length}</p>
-                <p className="text-xs text-blue-400/70">总计检查项</p>
+                <p className="text-xs text-blue-400/70">Total Items</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* AI 推荐面板 */}
+      {/* AI Recommendations Tab */}
       {activeTab === "recommend" && (
         <section className="mx-auto mt-6 max-w-7xl px-4 sm:px-6">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-5 w-5 text-purple-400" />
-              <h2 className="text-lg font-semibold">AI 智能推荐</h2>
-              <span className="ml-auto text-xs text-slate-500">{isAiMode ? `AI 诊断 · ${aiProduct}` : `根据产品 ${category?.label}${sub ? ` + ${sub.label}` : ""} 在 ${market?.label} 自动匹配`}</span>
+              <h2 className="text-lg font-semibold">AI Smart Recommendations</h2>
+              <span className="ml-auto text-xs text-slate-500">{isAiMode ? `AI Diagnosis · ${aiProduct}` : `Based on ${category?.label}${sub ? ` + ${sub.label}` : ""} in ${market?.label}`}</span>
             </div>
 
             {isAiMode && aiLoading ? (
               <div className="py-16 text-center">
                 <Loader2 className="mx-auto h-8 w-8 animate-spin text-purple-400" />
-                <p className="mt-3 text-slate-400">AI 正在生成诊断报告...</p>
+                <p className="mt-3 text-slate-400">AI is generating diagnosis report...</p>
               </div>
             ) : recommendations.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center">
                 <Info className="mx-auto h-10 w-10 text-slate-500" />
-                <p className="mt-3 text-slate-400">该品类在所选市场暂无合规数据</p>
+                <p className="mt-3 text-slate-400">No compliance data available for this category and market</p>
                 <Link to="/" className="mt-4 inline-flex items-center gap-1 rounded-xl bg-blue-600 px-5 py-2 text-sm text-white hover:bg-blue-700">
-                  返回首页选择品类
+                  Return Home
                 </Link>
               </div>
             ) : (
               <div className="space-y-3">
-                {/* 高优先级推荐 */}
                 {recommendations.filter(r => r.confidence === "high").length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Zap className="h-4 w-4 text-yellow-400" />
-                      <span className="text-sm font-semibold text-yellow-300">🔴 优先处理 — 这些项影响最大</span>
+                      <span className="text-sm font-semibold text-yellow-300">🔴 Priority — These items have the biggest impact</span>
                     </div>
                     <div className="space-y-2">
                       {recommendations.filter(r => r.confidence === "high").map((item, i) => (
@@ -316,12 +312,11 @@ export function Report() {
                   </div>
                 )}
 
-                {/* 中优先级推荐 */}
                 {recommendations.filter(r => r.confidence === "medium").length > 0 && (
                   <div className="mt-5">
                     <div className="flex items-center gap-2 mb-3">
                       <TrendingUp className="h-4 w-4 text-amber-400" />
-                      <span className="text-sm font-semibold text-amber-300">🟡 建议处理 — 提升合规完整度</span>
+                      <span className="text-sm font-semibold text-amber-300">🟡 Recommended — Improve compliance completeness</span>
                     </div>
                     <div className="space-y-2">
                       {recommendations.filter(r => r.confidence === "medium").map((item, i) => (
@@ -331,12 +326,11 @@ export function Report() {
                   </div>
                 )}
 
-                {/* 低优先级推荐 */}
                 {recommendations.filter(r => r.confidence === "low").length > 0 && (
                   <div className="mt-5">
                     <div className="flex items-center gap-2 mb-3">
                       <Target className="h-4 w-4 text-green-400" />
-                      <span className="text-sm font-semibold text-green-300">🟢 可选处理 — 视产品情况而定</span>
+                      <span className="text-sm font-semibold text-green-300">🟢 Optional — Depends on your product</span>
                     </div>
                     <div className="space-y-2">
                       {recommendations.filter(r => r.confidence === "low").map((item, i) => (
@@ -355,27 +349,27 @@ export function Report() {
                 className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
               >
                 {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                {isGenerating ? "生成中..." : "下载合规报告（PDF）"}
+                {isGenerating ? "Generating..." : "Download Report (PDF)"}
               </button>
               <Link to="/appeal" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-blue-700">
                 <ClipboardList className="h-4 w-4" />
-                查看申诉指导
+                View Appeal Guide
               </Link>
             </div>
           </div>
         </section>
       )}
 
-      {/* 合规清单 */}
+      {/* Compliance Checklist Tab */}
       {activeTab === "compliance" && (
         <section className="mx-auto mt-6 max-w-7xl px-4 sm:px-6">
-          <h2 className="text-lg font-semibold">详细合规检查清单</h2>
+          <h2 className="text-lg font-semibold">Detailed Compliance Checklist</h2>
           {rawCompliance.length === 0 ? (
             <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center">
               <Info className="mx-auto h-10 w-10 text-slate-500" />
-              <p className="mt-3 text-slate-400">该品类在所选市场暂无详细合规数据</p>
+              <p className="mt-3 text-slate-400">No detailed compliance data for this category and market</p>
               <Link to="/" className="mt-4 inline-flex items-center gap-1 rounded-xl bg-blue-600 px-5 py-2 text-sm text-white hover:bg-blue-700">
-                返回首页选择品类
+                Return Home
               </Link>
             </div>
           ) : (
@@ -397,9 +391,9 @@ export function Report() {
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-semibold text-white">{item.name}</h3>
                           {item.required ? (
-                            <span className="rounded-md bg-red-500/20 px-2 py-0.5 text-xs text-red-300">强制</span>
+                            <span className="rounded-md bg-red-500/20 px-2 py-0.5 text-xs text-red-300">Mandatory</span>
                           ) : (
-                            <span className="rounded-md bg-slate-500/20 px-2 py-0.5 text-xs text-slate-400">建议</span>
+                            <span className="rounded-md bg-slate-500/20 px-2 py-0.5 text-xs text-slate-400">Recommended</span>
                           )}
                         </div>
                         <p className="mt-1 text-sm text-slate-400">{item.desc}</p>
@@ -413,25 +407,24 @@ export function Report() {
         </section>
       )}
 
-      {/* 整改建议 */}
+      {/* Action Plan Tab */}
       {activeTab === "action" && (
         <section className="mx-auto mt-6 max-w-7xl px-4 sm:px-6">
           {isAiMode && aiResult && aiResult.warnings && aiResult.warnings.length > 0 && (
             <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 mb-4">
-              <h3 className="text-sm font-semibold text-red-300 mb-2">⚠ 关键注意事项</h3>
+              <h3 className="text-sm font-semibold text-red-300 mb-2">⚠ Key Warnings</h3>
               {aiResult.warnings.map((w, i) => (
                 <p key={i} className="text-sm text-red-200/80 mb-1">• {w}</p>
               ))}
             </div>
           )}
-          <h2 className="text-lg font-semibold mb-3">整改建议与行动计划</h2>
+          <h2 className="text-lg font-semibold mb-3">Action Items & Plan</h2>
           {recommendations.length === 0 ? (
             <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center">
-              <p className="text-slate-400">暂无整改建议数据</p>
+              <p className="text-slate-400">No action items available</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {/* 按 severity 排序：高风险先展示 */}
               {["high", "medium", "low"].map((sev) => {
                 const items = recommendations.filter(r => r.severity === sev);
                 if (items.length === 0) return null;
@@ -448,9 +441,9 @@ export function Report() {
                     <div className="flex items-center gap-2 mb-3">
                       {icon}
                       <span className={`text-sm font-semibold ${titleColor}`}>
-                        {sev === "high" ? "🔴 高优先级 — 需要立即处理" : 
-                         sev === "medium" ? "🟡 中优先级 — 建议尽快处理" : 
-                         "🟢 低优先级 — 按顺序处理"}
+                        {sev === "high" ? "🔴 High Priority — Immediate action required" : 
+                         sev === "medium" ? "🟡 Medium Priority — Handle soon" : 
+                         "🟢 Low Priority — Handle in order"}
                       </span>
                     </div>
                     <div className="space-y-3">
@@ -462,26 +455,26 @@ export function Report() {
                               <div className="flex flex-wrap items-center gap-2">
                                 <h3 className="font-semibold text-white">{item.name}</h3>
                                 {item.required && (
-                                  <span className="rounded-md bg-red-500/20 px-2 py-0.5 text-xs text-red-300">强制</span>
+                                  <span className="rounded-md bg-red-500/20 px-2 py-0.5 text-xs text-red-300">Mandatory</span>
                                 )}
                               </div>
                               <p className="mt-1 text-sm text-slate-400">{item.action}</p>
                               <div className="mt-2 rounded-lg bg-purple-500/10 p-2.5 text-xs text-purple-300">
                                 <Sparkles className="h-3 w-3 inline mr-1" />
-                                AI 推荐理由：{item.reason}
+                                AI Recommendation: {item.reason}
                               </div>
                               <div className="mt-3 flex flex-wrap gap-2">
                                 <span className="rounded-md bg-blue-600/20 px-2.5 py-1 text-xs text-blue-300">
                                   {item.priorityLabel}
                                 </span>
                                 <span className="inline-flex items-center gap-1 rounded-md bg-slate-600/20 px-2.5 py-1 text-xs text-slate-400">
-                                  <Clock className="h-3 w-3" />预计时间：{item.estimatedTime}
+                                  <Clock className="h-3 w-3" />Est. time: {item.estimatedTime}
                                 </span>
                                 <span className="rounded-md bg-slate-600/20 px-2.5 py-1 text-xs text-slate-400">
-                                  预估费用：{item.estimatedCost}
+                                  Est. cost: {item.estimatedCost}
                                 </span>
                                 <span className="rounded-md bg-slate-600/20 px-2.5 py-1 text-xs text-slate-400">
-                                  需第三方检测：{item.needsThirdParty ? "是" : "否"}
+                                  Third-party test: {item.needsThirdParty ? "Yes" : "No"}
                                 </span>
                               </div>
                             </div>
@@ -502,9 +495,9 @@ export function Report() {
           <div className="flex items-start gap-3">
             <Info className="mt-0.5 h-5 w-5 shrink-0 text-blue-400" />
             <div>
-              <h3 className="font-semibold text-blue-300">免责声明</h3>
+              <h3 className="font-semibold text-blue-300">Disclaimer</h3>
               <p className="mt-1 text-sm text-slate-400">
-                本报告及 AI 推荐仅供参考，不构成法律意见。合规要求可能随时更新，请以各监管机构和亚马逊官方发布的最新信息为准。建议咨询专业合规顾问获取针对性建议。
+                This report and AI recommendations are for reference only and do not constitute legal advice. Compliance requirements may change at any time. Please refer to the latest information from regulatory authorities and Amazon official channels. We recommend consulting a professional compliance advisor for tailored advice.
               </p>
             </div>
           </div>
@@ -514,7 +507,7 @@ export function Report() {
   );
 }
 
-// 推荐卡片组件
+// Recommendation card component
 function RecommendationCard({ item }: { item: RecommendationItem }) {
   const confColor = item.confidence === "high" ? "border-purple-500/30 bg-purple-500/10" :
                     item.confidence === "medium" ? "border-amber-500/30 bg-amber-500/10" :
@@ -531,7 +524,7 @@ function RecommendationCard({ item }: { item: RecommendationItem }) {
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="font-semibold text-white">{item.name}</h3>
-              {item.required && <span className="rounded-md bg-red-500/20 px-2 py-0.5 text-xs text-red-300">强制</span>}
+              {item.required && <span className="rounded-md bg-red-500/20 px-2 py-0.5 text-xs text-red-300">Mandatory</span>}
               <span className={`rounded-md px-2 py-0.5 text-xs ${badgeColor}`}>{item.priorityLabel}</span>
             </div>
             <p className="mt-1 text-sm text-slate-400">{item.desc}</p>
@@ -543,10 +536,10 @@ function RecommendationCard({ item }: { item: RecommendationItem }) {
           <Sparkles className="h-3 w-3" />{item.reason}
         </span>
         <span className="rounded-md bg-slate-600/20 px-2 py-1 text-slate-400">
-          预计：{item.estimatedTime}
+          Est. time: {item.estimatedTime}
         </span>
         <span className="rounded-md bg-slate-600/20 px-2 py-1 text-slate-400">
-          费用：{item.estimatedCost}
+          Est. cost: {item.estimatedCost}
         </span>
       </div>
     </div>
