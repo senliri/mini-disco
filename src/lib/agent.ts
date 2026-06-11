@@ -1,7 +1,6 @@
-﻿// AI 智能体核心逻辑
+// AI 智能体核心逻辑 — 通过 Netlify Function 代理调用 Agnes API
 
 import { PROFILE_EXTRACTION_PROMPT, DIAGNOSIS_PROMPT, APPEAL_PROMPT, SHORT_REPLY_PROMPT } from "./prompts";
-import { env } from "./env";
 
 // ============================================
 // 产品关键词词典 — 用于精准特征推断
@@ -42,7 +41,7 @@ export const FEATURE_KEYWORDS: FeatureKeywordMap = {
               "厨房", "kitchen", "吸管", "straw", "吸管杯", "sippy cup", "围裙", "apron",
               "食品级", "food grade", "硅胶", "silicone", "保鲜膜", "cling film",
               "榨汁机", "juicer", "搅拌机", "blender", "破壁机", "咖啡机", "coffee maker",
-              "奶瓶", "breast pump", "吸奶器", "餐具套装", "tableware set"],
+              "奶瓶", "breast pump", "吸奶器"],
     description: "直接接触食品的产品或部件",
   },
   wearable: {
@@ -50,7 +49,7 @@ export const FEATURE_KEYWORDS: FeatureKeywordMap = {
               "bracelet", "手链", "耳环", "earring", "首饰", "jewelry", "腰带", "belt",
               "鞋子", "shoes", "运动鞋", "sneakers", "耳机", "headphone", "听诊器",
               "stethoscope", "腰带扣", "眼镜框", "眼镜架", "护腕", "护膝", "护腰",
-              "智能戒指", "smart ring", "智能眼镜", "smart glasses", "智能项链"],
+              "智能戒指", "smart ring", "智能眼镜", "smart glasses"],
     description: "穿戴在身上的产品",
   },
   medical: {
@@ -91,7 +90,7 @@ export const FEATURE_KEYWORDS: FeatureKeywordMap = {
   contains_magnets: {
     keywords: ["磁铁", "magnet", "磁力", "magnetic", "磁吸", "磁扣", "磁吸支架",
               "MagSafe", "磁吸线", "magnetic cable", "磁力扣", "磁吸充电器", "磁吸玩具",
-              "磁性贴", "magnetic stickers", "磁性白板", "magnetic board", "磁力项链"],
+              "磁性贴", "magnetic stickers", "磁性白板", "magnetic board"],
     description: "含磁铁或磁性元件的产品",
   },
   precision: {
@@ -133,7 +132,7 @@ export const PRODUCT_TYPE_CATEGORY_MAP: Record<string, string[]> = {
 
 export interface ProductProfile {
   product_type: string;
-  category: string; // 推断的品类
+  category: string;
   has_battery: boolean | null;
   battery_capacity: number | null;
   has_wireless: boolean | null;
@@ -191,80 +190,45 @@ export interface ShortReplyResult {
   summary?: string;
 }
 
-type ApiEndpoint = "extract-profile" | "diagnose" | "appeal" | "short-reply";
-
 // ============================================
-// 核心：调用 AI API
+// 核心：调用 Netlify Function 代理
 // ============================================
 
-async function callAI<T>(endpoint: ApiEndpoint, systemPrompt: string, userMessage: string): Promise<T> {
-  // 尝试调用本地代理（Netlify Function）
-  const proxyUrl = "/.netlify/functions/chat";
-  
+async function callAI<T>(endpoint: string, params: Record<string, unknown>): Promise<T> {
   try {
-    const response = await fetch(proxyUrl, {
+    const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: endpoint,
-        prompt: systemPrompt,
-        message: userMessage,
-      }),
+      body: JSON.stringify({ action: endpoint, ...params })
     });
 
     if (!response.ok) {
-      throw new Error(`代理请求失败: ${response.status}`);
+      const errorText = await response.text();
+      console.warn("AI call failed:", response.status, errorText);
+      throw new Error("AI 服务暂时不可用");
     }
 
     const data = await response.json();
+    const reply = data.reply || "";
     
-    // 尝试解析 AI 返回的 JSON（可能包裹在 markdown 代码块中）
-    return parseAIResponse<T>(data.reply || data.content || data.message || "");
+    if (!reply) {
+      throw new Error("AI 返回内容为空");
+    }
+
+    return parseAIResponse<T>(reply);
   } catch (err) {
-    console.warn("代理调用失败，尝试直连:", err);
-    
-    // 降级：尝试直连 Agnes API
-    if (!env.apiBaseUrl) {
-      throw new Error("AI 服务暂时不可用。请配置 API 基础地址或稍后重试。");
-    }
-
-    try {
-      const url = env.apiBaseUrl.endsWith("/") 
-        ? `${env.apiBaseUrl.substring(0, env.apiBaseUrl.length - 1)}/chat`
-        : `${env.apiBaseUrl}/chat`;
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            { role: "system" as const, content: systemPrompt },
-            { role: "user" as const, content: userMessage },
-          ],
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`直连请求失败: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return parseAIResponse<T>(data.reply || data.content || data.message || data.text || "");
-    } catch (innerErr) {
-      throw new Error("AI 服务暂时不可用，请稍后重试。");
-    }
+    console.warn("AI 调用失败:", err);
+    throw new Error("AI 服务暂时不可用，请稍后重试。");
   }
 }
 
 // 解析 AI 返回的 JSON（处理 markdown 代码块包裹）
 function parseAIResponse<T>(text: string): T {
-  // 去除 markdown 代码块
   const cleaned = text
     .replace(/```json\s*/gi, "")
     .replace(/```\s*/g, "")
     .trim();
 
-  // 尝试找到 JSON 对象
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     throw new Error("AI 返回格式异常");
@@ -277,20 +241,13 @@ function parseAIResponse<T>(text: string): T {
 // 公开 API
 // ============================================
 
-/**
- * 提取产品画像
- */
 export async function extractProductProfile(userMessage: string): Promise<ProfileExtractionResult> {
   return callAI<ProfileExtractionResult>(
     "extract-profile",
-    PROFILE_EXTRACTION_PROMPT.replace("{userMessage}", userMessage),
-    userMessage
+    { prompt: PROFILE_EXTRACTION_PROMPT.replace("{userMessage}", userMessage), message: userMessage }
   );
 }
 
-/**
- * 基于产品描述关键词推断特征（纯前端本地判断，不依赖 AI）
- */
 export function inferFeaturesFromKeywords(description: string): Partial<ProductProfile> {
   const result: Partial<ProductProfile> = {};
   const lower = description.toLowerCase();
@@ -303,9 +260,6 @@ export function inferFeaturesFromKeywords(description: string): Partial<ProductP
   return result;
 }
 
-/**
- * 推断产品类型所属品类
- */
 export function inferCategory(productType: string): string {
   const lower = productType.toLowerCase();
   for (const [category, keywords] of Object.entries(PRODUCT_TYPE_CATEGORY_MAP)) {
@@ -313,22 +267,17 @@ export function inferCategory(productType: string): string {
       return category;
     }
   }
-  return "electronics"; // 默认
+  return "electronics";
 }
 
-/**
- * 生成合规诊断（增强版：联网搜索 + 本地特征推断 + AI 综合诊断）
- */
 export async function generateDiagnosis(
   profile: ProductProfile,
   market: string,
   category?: string
 ): Promise<DiagnosisResult> {
-  // 1. 本地关键词推断（作为补充，弥补 AI 提取遗漏的特征）
   const keywordFeatures = inferFeaturesFromKeywords(profile.product_type);
   const inferredCategory = inferCategory(profile.product_type);
 
-  // 2. 合并特征：profile 优先，keywordFeatures 补充
   const mergedProfile: ProductProfile = {
     ...profile,
     category: inferredCategory,
@@ -345,7 +294,6 @@ export async function generateDiagnosis(
     has_flammable: profile.has_flammable ?? (keywordFeatures.has_flammable as boolean),
   };
 
-  // 3. 构建详细的特征描述
   const featureList: string[] = [];
   featureList.push(`产品类型：${mergedProfile.product_type}`);
   featureList.push(`品类：${mergedProfile.category}`);
@@ -369,15 +317,15 @@ export async function generateDiagnosis(
 
   const marketName = market === "US" ? "美国" : market === "EU" ? "欧盟" : market === "UK" ? "英国" : market === "JP" ? "日本" : market === "CA" ? "加拿大" : "澳洲";
 
-  // 4. 调用 AI 诊断（Netlify Function 层会自动注入搜索指令）
   return callAI<DiagnosisResult>(
     "diagnose",
-    DIAGNOSIS_PROMPT
-      .replace("{productType}", mergedProfile.product_type)
-      .replace("{productFeatures}", featureList.join("、"))
-      .replace("{market}", marketName)
-      .replace("{category}", category || mergedProfile.category),
-    `请根据以下产品信息生成详细的合规诊断：
+    {
+      prompt: DIAGNOSIS_PROMPT
+        .replace("{productType}", mergedProfile.product_type)
+        .replace("{productFeatures}", featureList.join("、"))
+        .replace("{market}", marketName)
+        .replace("{category}", category || mergedProfile.category),
+      message: `请根据以下产品信息生成详细的合规诊断：
 
 产品类型：${mergedProfile.product_type}
 品类：${mergedProfile.category}
@@ -392,12 +340,10 @@ export async function generateDiagnosis(
 - 含磁铁：需要磁性强检测（15 CFR 1309）
 - 易燃产品：DOT 运输认证
 `
+    }
   );
 }
 
-/**
- * 生成申诉方案
- */
 export async function generateAppeal(
   productType: string,
   reason: string,
@@ -405,17 +351,16 @@ export async function generateAppeal(
 ): Promise<AppealResult> {
   return callAI<AppealResult>(
     "appeal",
-    APPEAL_PROMPT
-      .replace("{productType}", productType)
-      .replace("{reason}", reason)
-      .replace("{actions}", actions),
-    "请生成完整的申诉方案"
+    {
+      prompt: APPEAL_PROMPT
+        .replace("{productType}", productType)
+        .replace("{reason}", reason)
+        .replace("{actions}", actions),
+      message: "请生成完整的申诉方案"
+    }
   );
 }
 
-/**
- * 简短回复（用于追问场景）
- */
 export async function shortReply(
   profile: ProductProfile,
   status: string,
@@ -424,16 +369,15 @@ export async function shortReply(
   const profileStr = JSON.stringify(profile, null, 2);
   return callAI<ShortReplyResult>(
     "short-reply",
-    SHORT_REPLY_PROMPT
-      .replace("{profile}", profileStr)
-      .replace("{status}", status),
-    userMessage
+    {
+      prompt: SHORT_REPLY_PROMPT
+        .replace("{profile}", profileStr)
+        .replace("{status}", status),
+      message: userMessage
+    }
   );
 }
 
-/**
- * 判断信息是否足够开始诊断
- */
 export function isProfileComplete(profile: ProductProfile, market: string | null): boolean {
   if (!profile.product_type || !profile.product_type.trim()) {
     return false;
@@ -441,13 +385,12 @@ export function isProfileComplete(profile: ProductProfile, market: string | null
   if (!market) {
     return false;
   }
-  // 至少有一个特征被识别（不全是 null）
   const featureKeys = ["has_battery", "has_wireless", "is_children", "food_contact",
     "wearable", "medical", "electrical", "contains_chemicals", "contains_magnets",
     "precision", "has_flammable"] as const;
   const hasAnyFeature = featureKeys.some(key => (profile as Record<string, unknown>)[key] !== null);
   if (!hasAnyFeature) {
-    return false; // 没有任何特征识别，说明产品信息可能太模糊
+    return false;
   }
   return true;
 }

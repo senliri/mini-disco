@@ -1,0 +1,14 @@
+{
+  "env": {
+    "AGNES_API_KEY": {
+      "value": "sk-LgcxeEG9Qz6kCipH6mzmm9kkWj9J4gFla8FsV2qjzXhB8y8F",
+      "scope": "build",
+      "target": "production"
+    },
+    "AI_BASE_URL": {
+      "value": "https://apihub.agnes-ai.com/v1/chat/completions",
+      "scope": "build",
+      "target": "production"
+    }
+  }
+}

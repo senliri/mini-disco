@@ -1,12 +1,8 @@
 /**
- * Netlify Serverless Function — AI Chat Proxy + Web Search
- *
- * Purpose:
- * 1. Safely proxy AI requests (key never exposed to client)
- * 2. Web search for compliance data
+ * Netlify Serverless Function — AI Chat Proxy
  */
 
-export default async function handler(event, context) {
+module.exports.handler = async function handler(event, context) {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
@@ -49,8 +45,8 @@ export default async function handler(event, context) {
     return await handleSearch(event, headers, body, SEARCH_API_KEY);
   }
 
-  return await handleAIChat(event, headers, body, API_KEY);
-}
+  return await handleAIChat(event, headers, body, API_KEY, action, prompt, message);
+};
 
 async function handleSearch(event, headers, body, searchApiKey) {
   const query = body.query || "";
@@ -79,10 +75,7 @@ async function handleSearch(event, headers, body, searchApiKey) {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ 
-        error: "Search failed", 
-        results: [] 
-      }),
+      body: JSON.stringify({ error: "Search failed", results: [] }),
     };
   }
 }
@@ -103,20 +96,12 @@ async function searchViaSerpApi(key, query, headers) {
     snippet: r.snippet || "",
   }));
 
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify({ results }),
-  };
+  return { statusCode: 200, headers, body: JSON.stringify({ results }) };
 }
 
 async function searchViaBing(key, query, headers) {
-  const url = "https://api.bing.microsoft.com/v7.0/search";
-  
-  const response = await fetch(url, {
-    headers: {
-      "Ocp-Apim-Subscription-Key": key,
-    },
+  const response = await fetch("https://api.bing.microsoft.com/v7.0/search", {
+    headers: { "Ocp-Apim-Subscription-Key": key },
   });
 
   if (!response.ok) {
@@ -130,11 +115,7 @@ async function searchViaBing(key, query, headers) {
     snippet: r.snippet || "",
   }));
 
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify({ results }),
-  };
+  return { statusCode: 200, headers, body: JSON.stringify({ results }) };
 }
 
 async function searchViaDuckDuckGo(query, headers) {
@@ -142,9 +123,7 @@ async function searchViaDuckDuckGo(query, headers) {
   const url = `https://html.duckduckgo.com/html/?q=${encodedQuery}`;
   
   const response = await fetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; ComplianceCat/1.0)",
-    },
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; ComplianceCat/1.0)" },
   });
 
   if (!response.ok) {
@@ -152,7 +131,6 @@ async function searchViaDuckDuckGo(query, headers) {
   }
 
   const html = await response.text();
-  
   const results = [];
   const resultRegex = /<a class="result__a"[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>.*?<a class="result__snippet[^>]*>([^<]+)<\/a>/g;
   let match;
@@ -166,24 +144,19 @@ async function searchViaDuckDuckGo(query, headers) {
     if (results.length >= 5) break;
   }
 
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify({ results }),
-  };
+  return { statusCode: 200, headers, body: JSON.stringify({ results }) };
 }
 
-async function handleAIChat(event, headers, body, apiKey) {
-  const { action, prompt, message } = body;
-
+async function handleAIChat(event, headers, body, apiKey, action, prompt, message) {
   const BASE_URL = process.env.AI_BASE_URL || "https://apihub.agnes-ai.com/v1/chat/completions";
   const MODEL = process.env.AI_MODEL || "agnes-2.0-flash";
   
+  let apiBody;
   if (action === "extract-profile" || action === "diagnose" || action === "appeal" || action === "short-reply") {
-    let systemMessage = prompt || "You are a smart assistant.";
-    let userContent = message || "";
+    const systemMessage = prompt || "You are a smart assistant.";
+    const userContent = message || "";
     
-    let apiBody = {
+    apiBody = {
       model: MODEL,
       messages: [
         { role: "system", content: systemMessage },
@@ -225,7 +198,7 @@ async function handleAIChat(event, headers, body, apiKey) {
     }
 
     const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || data.reply || "";
+    const reply = data.choices?.[0]?.message?.content || "";
 
     return {
       statusCode: 200,
