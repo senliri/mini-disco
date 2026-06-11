@@ -42,7 +42,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <main>{children}</main>
 
       <footer className="border-t border-white/10 px-4 py-8 text-center text-sm text-slate-500">
-        <p>© 2026 Compliance Cat — Amazon Compliance Assistant | For reference only, not legal advice</p>
+        <p>© 2026 Compliance Cat — Amazon Compliance Assistant</p>
+        <p className="mt-1">For reference only, not legal advice</p>
+        <div className="mt-3 flex justify-center gap-4 text-xs text-slate-600">
+          <a href="/" className="hover:text-slate-400">Home</a>
+          <a href="/report" className="hover:text-slate-400">Compliance Report</a>
+          <a href="/appeal" className="hover:text-slate-400">Appeal Guide</a>
+        </div>
       </footer>
     </div>
   );
