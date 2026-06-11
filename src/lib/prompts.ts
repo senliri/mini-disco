@@ -65,6 +65,15 @@ export const PROFILE_EXTRACTION_PROMPT = `你是一个亚马逊合规专家。�
 - contains_magnets: 磁性配件/磁吸产品/MagSafe/磁力扣 → true
 - precision: 精密仪器/相机/电子秤/测距仪/显微镜 → true
 - has_flammable: 喷雾/油漆/杀虫剂/蜡烛/打火机/酒精类 → true
+- 市场识别规则（必须严格执行）：
+  - "美国/US/United States/America" → "US"
+  - "欧盟/EU/Europe/European/荷兰/Holland/Netherlands/德国/Germany/法国/France/意大利/Italy/西班牙/Spain/波兰/Poland/比利时/Belgium/瑞典/Sweden/丹麦/Denmark/挪威/Norway/芬兰/Finland/奥地利/Austria/爱尔兰/Ireland/葡萄牙/Portugal/希腊/Greece/捷克/Czech/匈牙利/Hungary/罗马尼亚/Romania" → "EU"
+  - "英国/UK/United Kingdom/Britain" → "UK"
+  - "日本/JP/Japan" → "JP"
+  - "加拿大/CA/Canada" → "CA"
+  - "澳洲/AU/Australia/New Zealand" → "AU"
+  - 如果用户明确提到国家/地区，优先按上述映射表识别
+  - 国家不在列表中且用户没提市场 → "null"
 - 信息不足时 questions 数组必须有内容
 - confidence: 信息完整且判断明确 → high，有部分推断 → medium，信息极少 → low
 
