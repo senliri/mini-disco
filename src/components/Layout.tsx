@@ -1,8 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import { siteConfig } from "../data/site";
+import { useState } from "react";
+import { FeedbackModal, FeedbackButton } from "./Feedback";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const [showFeedback, setShowFeedback] = useState(false);
   const navItems = [
     { label: "AI Diagnosis", href: "/" },
     { label: "Compliance Report", href: "/report" },
@@ -49,7 +52,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <a href="/report" className="hover:text-slate-400">Compliance Report</a>
           <a href="/appeal" className="hover:text-slate-400">Appeal Guide</a>
         </div>
+        <FeedbackButton onClick={() => setShowFeedback(true)} />
       </footer>
+
+      <FeedbackModal isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
     </div>
   );
 }
