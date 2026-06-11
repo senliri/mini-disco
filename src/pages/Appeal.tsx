@@ -412,17 +412,18 @@ Output format (strict JSON):
             )}
 
             {history.length === 0 && (
-              <div className="mt-8 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center">
-                <FileText className="mx-auto h-12 w-12 text-slate-500" />
-                <h3 className="mt-4 text-lg font-medium text-slate-300">No Appeal Records Yet</h3>
-                <p className="mt-2 text-sm text-slate-500">Appeal plans will be saved here automatically after generation</p>
-                <Link to="/" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700">
-                  <CheckCircle className="h-4 w-4" />
-                  Start a New Compliance Check
-                </Link>
-              </div>
+              <>
+                <div className="mt-8 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center">
+                  <FileText className="mx-auto h-12 w-12 text-slate-500" />
+                  <h3 className="mt-4 text-lg font-medium text-slate-300">No Appeal Records Yet</h3>
+                  <p className="mt-2 text-sm text-slate-500">Appeal plans will be saved here automatically after generation</p>
+                  <Link to="/" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700">
+                    <CheckCircle className="h-4 w-4" />
+                    Start a New Compliance Check
+                  </Link>
+                </div>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 { icon: Upload, title: "Upload Compliance Documents", desc: "Upload product test reports, certification certificates, etc. for unified management" },
                 { icon: Mail, title: "Historical Notifications", desc: "Save Amazon performance notifications and compliance warning history" },
@@ -438,7 +439,9 @@ Output format (strict JSON):
                   </div>
                 );
               })}
-            </div>
+              </div>
+              </>
+            )}
           </div>
         </section>
       )}
