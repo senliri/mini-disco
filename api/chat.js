@@ -157,7 +157,29 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     const reply = data.choices?.[0]?.message?.content || '';
-    log.info('AI request completed', { action, ip, hasReply: !!reply });
+    
+    // Detect invalid API key responses (fallback messages from Agnes)
+    const suspiciousPatterns = [
+      'this page is only available',
+      'invalid api key',
+      'authentication failed',
+      'please configure',
+    ];
+    const replyLower = (reply || '').toLowerCase();
+    const isSuspicious = suspiciousPatterns.some(p => replyLower.includes(p));
+    
+    if (isSuspicious || !reply || reply.length < 10) {
+      log.error('AI returned suspicious/empty response', { action, reply: reply?.substring(0, 200), ip });
+      res.statusCode = 502;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ 
+        error: 'AI service error: invalid configuration',
+        details: isSuspicious ? 'Received unexpected response from AI service' : 'Empty response'
+      }));
+      return;
+    }
+    
+    log.info('AI request completed', { action, ip, hasReply: true });
 
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
