@@ -56,7 +56,7 @@ export default defineConfig({
           // Split compliance data into its own chunk
           // so it's only loaded when a route actually imports it
           if (id.includes('src/data/site')) {
-            return 'siteData';
+            return 'site-data';
           }
         },
       },
