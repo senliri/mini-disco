@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://catcompliance.netlify.app/sitemap.xml
