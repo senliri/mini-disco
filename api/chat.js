@@ -115,6 +115,18 @@ export default async function handler(req, res) {
     ];
   }
 
+  // Validate API key before making request
+  if (!AGNES_API_KEY || AGNES_API_KEY === '') {
+    log.error('AGNES_API_KEY not configured in Vercel environment variables');
+    res.statusCode = 503;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ 
+      error: 'AI service not configured. Please set AGNES_API_KEY in Vercel dashboard.', 
+      details: 'Environment variable AGNES_API_KEY is missing' 
+    }));
+    return;
+  }
+
   try {
     const response = await fetch(AGNES_BASE_URL, {
       method: 'POST',

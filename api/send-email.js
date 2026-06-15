@@ -65,6 +65,15 @@ export default async function handler(req, res) {
     },
   });
 
+  // Validate SMTP config
+  if (!process.env.SMTP_PASS) {
+    log.error('SMTP_PASS not configured in Vercel environment variables');
+    return res.status(503).json({ 
+      error: 'Email service not configured. Please set SMTP_PASS in Vercel dashboard.', 
+      code: 'SMTP_NOT_CONFIGURED' 
+    });
+  }
+
   try {
     const info = await transporter.sendMail({
       from: process.env.SMTP_USER || 'senlin2027@126.com',

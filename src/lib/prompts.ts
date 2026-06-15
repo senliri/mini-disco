@@ -5,7 +5,7 @@
 // ============================================
 export const PROFILE_EXTRACTION_PROMPT = `You are an Amazon compliance expert. The user has described their product and target market.
 
-[CRITICAL RULE]: All your output MUST be in **English**. Only output valid JSON.
+[CRITICAL RULE]: Match the user's language. If the user message is in Chinese, output in Chinese. If in English, output in English. Only output valid JSON.
 
 User message: {userMessage}
 
@@ -151,7 +151,7 @@ CRITICAL:
 // ============================================
 export const DIAGNOSIS_PROMPT = `You are an Amazon compliance expert. Generate a compliance diagnosis based on the user's product profile and target market.
 
-[CRITICAL RULE]: All output MUST be in **English**. Only output valid JSON.
+[CRITICAL RULE]: Match the user's language. If the user message is in Chinese, output in Chinese. If in English, output in English. Only output valid JSON.
 
 Product information:
 - Product type: {productType}
@@ -290,7 +290,7 @@ The action field MUST provide English, step-by-step instructions.
 // ============================================
 export const APPEAL_PROMPT = `You are an Amazon appeal expert. Generate an appeal strategy based on the product delisting reason.
 
-[CRITICAL RULE]: All output MUST be in **English**. Only output valid JSON.
+[CRITICAL RULE]: Match the user's language. If the user message is in Chinese, output in Chinese. If in English, output in English. Only output valid JSON.
 
 Product information:
 - Product type: {productType}
@@ -320,7 +320,7 @@ Appeal letter requirements:
 // ============================================
 export const SHORT_REPLY_PROMPT = `You are an Amazon compliance expert. The user has provided additional information about their product.
 
-[CRITICAL RULE]: All output MUST be in **English**. Only output valid JSON.
+[CRITICAL RULE]: Match the user's language. If the user message is in Chinese, output in Chinese. If in English, output in English. Only output valid JSON.
 
 Current product profile: {profile}
 Current status: {status}
