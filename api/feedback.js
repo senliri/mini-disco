@@ -1,5 +1,5 @@
 // Vercel Serverless Function - Feedback submission
-// Replaces Netlify Functions (.netlify/functions/feedback)
+// Replaces Netlify Functions → Vercel Serverless Function (/api/feedback)
 
 export default async function handler(req, res) {
   // Only allow POST
@@ -33,8 +33,9 @@ export default async function handler(req, res) {
     // Optionally send email notification if SMTP configured
     if (process.env.SMTP_USER && process.env.SMTP_PASS && body.email) {
       try {
-        const nodemailer = await import('nodemailer');
-        const transporter = nodemailer.createTransport({
+        const { createTransport } = await import('nodemailer');
+        const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@compliance.cat';
+        const transporter = createTransport({
           host: process.env.SMTP_HOST || 'smtp.126.com',
           port: parseInt(process.env.SMTP_PORT || '465', 10),
           secure: true,
@@ -45,8 +46,8 @@ export default async function handler(req, res) {
         });
 
         await transporter.sendMail({
-          from: process.env.SMTP_USER || 'senlin2027@126.com',
-          to: process.env.FEEDBACK_EMAIL || process.env.SMTP_USER || 'senlin2027@126.com',
+          from: fromAddress,
+          to: process.env.FEEDBACK_EMAIL || process.env.SMTP_USER || 'noreply@compliance.cat',
           subject: `New Feedback from ${body.email || 'Anonymous'}`,
           html: `
             <h3>New User Feedback</h3>

@@ -1,5 +1,5 @@
 // Vercel Serverless Function - AI proxy with auth + rate limiting
-// Replaces Netlify Functions (.netlify/functions/chat)
+// Replaces Netlify Functions → Vercel Serverless Function (/api/chat)
 
 import crypto from 'node:crypto';
 import { log } from '@vercel/functions';

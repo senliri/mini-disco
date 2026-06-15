@@ -1,5 +1,5 @@
 // 联网搜索合规数据
-// 通过 Netlify Function 调用搜索 API
+// 通过 Vercel Serverless Function 调用搜索 API
 
 export interface SearchResult {
   title: string;

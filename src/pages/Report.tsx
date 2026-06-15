@@ -317,10 +317,7 @@ export function Report() {
       const emailContent = generateEmailContent();
       
       // Determine API endpoint
-      const isLocal = window.location.hostname === 'localhost';
-      const apiUrl = isLocal 
-        ? 'http://localhost:3000/api/send-email' 
-        : '/api/send-email';
+      const apiUrl = '/api/send-email';
       
       const response = await fetch(apiUrl, {
         method: 'POST',

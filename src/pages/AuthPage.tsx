@@ -70,12 +70,13 @@ export function AuthPage() {
       }
 
       if (result.success && result.user) {
-        setSuccess(mode === "register" ? "Registration successful! Logging you in..." : "Login successful! Redirecting...");
+        setSuccess(mode === "register" ? "Registration successful! Logging you in..." : "Login successful!");
         
         // Redirect to home (SPA navigation, no page refresh)
+        // Small delay to show success message, then navigate
         setTimeout(() => {
           navigate("/", { replace: true });
-        }, 800);
+        }, 500);
       } else {
         setError(result.error || "Authentication failed");
       }

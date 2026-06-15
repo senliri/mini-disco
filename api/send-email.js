@@ -2,7 +2,7 @@
 // Uses nodemailer with 126.com SMTP
 // All credentials from environment variables
 
-import nodemailer from 'nodemailer';
+import { createTransport } from 'nodemailer';
 import { log } from '@vercel/functions';
 
 const RATE_LIMITS = new Map();
@@ -55,7 +55,8 @@ export default async function handler(req, res) {
   }
 
   // Create SMTP transporter
-  const transporter = nodemailer.createTransport({
+  const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@compliance.cat';
+  const transporter = createTransport({
     host: process.env.SMTP_HOST || 'smtp.126.com',
     port: parseInt(process.env.SMTP_PORT || '465', 10),
     secure: true,
@@ -76,7 +77,7 @@ export default async function handler(req, res) {
 
   try {
     const info = await transporter.sendMail({
-      from: process.env.SMTP_USER || 'senlin2027@126.com',
+      from: fromAddress,
       to,
       subject,
       html,
